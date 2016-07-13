@@ -202,6 +202,14 @@ summary(fit)</code></pre>
 <p>The age in years depreciation is treated as a linear variable (averaging about $-20K per year for the G3s), even though it shouldn’t be linear (airplanes typically lose a percentage of value every year). Treating this variable on a logarithmic axis yields a more statistically significant effect of age.</p>
 <p>Although the number of months stil available on the warranty did not turned out to be statistically significant, it’s interesting to note that the model priced each remaining month at about $793.</p>
 <p>SVT and useful load don’t have a predictable effect on cost. There were only two planes with (potentially) no YD, so take this odd factor with a big grain of salt.</p>
+<p>Here’s an example prediction using this data:</p>
+<pre class="r"><code>check = data.frame(Gen=as.factor(&quot;G3&quot;), Turbo=as.factor(&quot;N&quot;), TKS=TRUE, AC=TRUE, SVT=TRUE, ESP=TRUE, EVS=TRUE, YD=TRUE, Age=5, TTSN=600, Warranty.mos=0)
+predict(fit, newdata=check)</code></pre>
+<pre><code>##        1 
+## 469.7493</code></pre>
+<pre class="r"><code># Which can also be manually extrapolated as:
+578.23 + 88.07*0 + (-17.34*5) + (-0.0754*600) + 41.29 + 17.72 + 19.72 + 12.47 + (-67.72)</code></pre>
+<pre><code>## [1] 469.77</code></pre>
 </div>
 
 

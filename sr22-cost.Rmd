@@ -95,3 +95,11 @@ The age in years depreciation is treated as a linear variable (averaging about $
 Although the number of months stil available on the warranty did not turned out to be statistically significant, it's interesting to note that the model priced each remaining month at about $`r round(fit$coefficients['Warranty.mos'] * 1000)`.
 
 SVT and useful load don't have a predictable effect on cost. There were only two planes with (potentially) no YD, so take this odd factor with a big grain of salt.
+
+Here's an example prediction using this data:
+```{r example-prediction}
+check = data.frame(Gen=as.factor("G3"), Turbo=as.factor("N"), TKS=TRUE, AC=TRUE, SVT=TRUE, ESP=TRUE, EVS=TRUE, YD=TRUE, Age=5, TTSN=600, Warranty.mos=0)
+predict(fit, newdata=check)
+# Which can also be manually extrapolated as:
+578.23 + 88.07*0 + (-17.34*5) + (-0.0754*600) + 41.29 + 17.72 + 19.72 + 12.47 + (-67.72)
+```
