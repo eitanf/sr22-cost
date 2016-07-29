@@ -1,9 +1,11 @@
 ---
+## A relatively current output of this script can be found at: http://rpubs.com/etc_26/sr22
 title: "Cirrus SR22 price analysis"
 author: "Eitan Frachtenberg"
-date: "June 30, 2016"
+date: "July 29, 2016"
 output: html_document
 ---
+
 
 ```{r setup, include=FALSE}
 # Load data and rearrange some columns
