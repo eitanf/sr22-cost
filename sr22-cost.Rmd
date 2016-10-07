@@ -1,9 +1,10 @@
 ---
-## A relatively current output of this script can be found at: http://rpubs.com/etc_26/sr22
 title: "Cirrus SR22 price analysis"
 author: "Eitan Frachtenberg"
 date: "October 07, 2016"
-output: html_document
+output:
+  html_document:
+    keep_md: true
 ---
 
 
