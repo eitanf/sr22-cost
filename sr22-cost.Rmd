@@ -2,7 +2,7 @@
 ## A relatively current output of this script can be found at: http://rpubs.com/etc_26/sr22
 title: "Cirrus SR22 price analysis"
 author: "Eitan Frachtenberg"
-date: "July 29, 2016"
+date: "October 07, 2016"
 output: html_document
 ---
 
@@ -25,11 +25,12 @@ data$SVT <- data$SVT == 'Y'
 data$ESP <- data$ESP == 'Y'
 data$EVS <- data$EVS == 'Y'
 data$YD <- data$YD == 'Y'
+data$Age <- 2016 - data$Year
 ```
 
 ### Data
 
-Let's start by looking at the data collection, copied primarily from controller.com listings (and can be found at https://docs.google.com/spreadsheets/d/1yVOkI8Kzx-MZKUAS6V1GZim6vDXtvC_MnLlQR1pgMj4/edit?usp=sharing). We have a total of `r nrow(data)` airplanes from `r min(data$Year)` to `r max(data$Year)`. All of them are either G3 (`r sum(data$Gen=='G3')` airplanes) or G5 (`r sum(data$Gen=='G5')` airplanes), Turbo (`r sum(data$Turbo=='T')` airplanes), Turbo Normalized (`r sum(data$Turbo=='TN')` airplanes) or normally aspirated (`r sum(data$Turbo=='N')` airplanes). In addition, we look at these features: TKS: `r sum(data$TKS)` airplanes (mostly FIKI); Air conditioner: `r sum(data$AC)` airplanes; SVT: `r sum(data$SVT)` airplanes; ESP: `r sum(data$ESP)` airplanes; EVS: `r sum(data$EVS)` airplanes; and Yaw damper: `r sum(data$YD)`.
+Let's start by looking at the data collection, copied primarily from controller.com listings (and can be found at https://docs.google.com/spreadsheets/d/1yVOkI8Kzx-MZKUAS6V1GZim6vDXtvC_MnLlQR1pgMj4/edit?usp=sharing). We have a total of `r nrow(data)` airplanes from `r min(data$Year)` to `r max(data$Year)`. All of them use Garmin Perspective avionics so are either G3 (`r sum(data$Gen=='G3')` airplanes) or G5 (`r sum(data$Gen=='G5')` airplanes). The engine is either Turbo (`r sum(data$Turbo=='T')` airplanes), Turbo Normalized (`r sum(data$Turbo=='TN')` airplanes) or normally aspirated (`r sum(data$Turbo=='N')` airplanes). In addition, we look at these features: TKS: `r sum(data$TKS)` airplanes (mostly FIKI); Air conditioner: `r sum(data$AC)` airplanes; SVT: `r sum(data$SVT)` airplanes; ESP: `r sum(data$ESP)` airplanes; EVS: `r sum(data$EVS)` airplanes; and Yaw damper: `r sum(data$YD)`.
 
 To simplify, let's start by looking at airplane cost simply as a function of total flight time, ignoring top overhauls and airplane features. We'll combine the effect of multiple variables later:
 
@@ -41,21 +42,18 @@ Note: Prices are in aviation units ($1K) and are *asking prices*. This is import
 
 the plotted lines are just smoothing using linear regression. They don't represent real planes (which are in the points), but rather a statistical attempt to capture the trend, with 95% confidence interval (in gray bands).
 
-Clearly, G5s command a significantly higher asking price premium ($100K+) over G3s for equivalent hours. The G3s show a steady depreciation with hours, whereas the G5s do not (at least in asking price). This is probably an artefact of the small data set and the couple of outliers (such as N339WS, with 1,150 hours at $719,000). If we remove all the data points above $700,000, we get this:
+Clearly, G5s command a significantly higher asking price premium ($100K+) over G3s for equivalent hours.
 
-```{r eda-by-gen-capped}
-ggplot(data = subset(data, Price <= 700), aes(x=TTSN, y=Price, color=Gen)) + geom_point() + geom_smooth(method=glm)
-```
+### Effect of the engine type
 
-Now we see some more downwards trend (again, more data points are required to generalize this trend, especially on actual sale pricing).
-
-Next, let's focus on the G3s only, for a more fair comparison of of the turbo premium (the G5 data points add too much noise, with their flat pricing).
+We can look at the G3s and G5s separately for an evluation of the 'Turbo' premium:
 
 ```{r eda-by-turbo}
+ggplot(data = subset(data, Gen=='G5'), aes(x=TTSN, y=Price, color=Turbo)) + geom_point() + geom_smooth(method=glm)
 ggplot(data = subset(data, Gen=='G3'), aes(x=TTSN, y=Price, color=Turbo)) + geom_point() + geom_smooth(method=glm)
 ```
 
-There are just too few normally aspirated airplanes in this data set (`r nrow(subset(data, Turbo=='N' & Gen=='G3'))` points) to make any sweeping statements, but it's interesting to note that they seem to cost more than the TN for equivalent hours. I find this counter-intuitive, but may be explainable by a third variable with more analysis (for example, many TN airplanes have no AC, whereas most N airplanes do).
+There are just too few normally aspirated airplanes in this data set (`r nrow(subset(data, Turbo=='N' & Gen=='G3'))` points) to make any sweeping statements, but it appears that Turbo engines do appreciate faster than NAs, likely because of the increased overhhaul cost. It's also interesting to note that NA G3 airplanes appear to cost more than the TN for equivalent hours. I find this counter-intuitive, but it may be explainable by a third variable with more analysis (for example, many TN airplanes have no AC, whereas most N airplanes do).
 
 Also remarkable is that Turbo models (SR22T) command a much higher price premium than TN. Ignoring the debate on the merits of factory turbo vs. after-market, the data suggests a strong market inefficiency on the G3s, offering similar technical capabilities at a much lower price for the TNs. And although the data is too sparse to be conclusive, it doesn't appear like the two turbo models depreciate at significantly different rates over flight hours, so there doesn't appear to be a higher reserve/mx cost associated with either turbo.
 
@@ -73,35 +71,40 @@ ggplot(data) +
   geom_bar(aes(AC, Price, fill=Gen), position = "dodge", stat = "summary", fun.y = "mean")
 ```
 
-G5s show very little depreciation with age so far (at least in asking price!), whereas the G3s show a clearer trend. Depreciation appears to accelerate after five years.
-The TKS and AC options add about $200K on average to the cost of a used plane--significantly more than the cost of the option for a new airplane. This is not the actual cost premium, as we'll see next. It ignores the combined effect of other variables like age, premium appeareance, etc. In fact, it is likely that airplanes with this options are more "fully loaded" than those without.
+G5s show very little depreciation with age so far (at least in asking price; this will likely correct as the used market for G5 grows and becomes more efficient), whereas the G3s show a clearer trend. Depreciation appears to accelerate after five years (perhaps the extended warranty limit).
+The TKS and AC options add about $200K on average to the cost of a used plane --- significantly more than the cost of the option for a new airplane. This is not the actual cost premium, as we'll see next. It ignores the combined effect of other variables like age, premium appeareance, etc. In fact, it is likely that airplanes with this options are more "fully loaded" than those without. Cirrus sells the popular GTS package, which offers a discount on planes that bundle many of these features together.
 
 
 ### Linear regression
 
-Finally, let's try to combine all the factors into a single predictive cost model:
+Finally, let's try to combine all the factors into a single predictive cost model (looking separately at G3 and G5):
 
 ```{r glm-model}
-fit <- glm(Price ~ Gen + Turbo + Age + TTSN + TKS + AC + ESP + EVS + YD + Warranty.mos, data = data)
-summary(fit)
-fitG3 <- glm(Price ~ Turbo + Age + TTSN + TKS + AC + ESP + EVS + YD + Warranty.mos, data = subset(data, Gen=='G3'))
-# summary(fitG3)
+fitG5 <- glm(Price ~ Turbo + Age + TTSN + TKS + AC + Warranty.mos + EVS + Useful.load, data = subset(data, Gen=='G5'))
+summary(fitG5)
+fitG3 <- glm(Price ~ Turbo + Age + TTSN + TKS + AC + Warranty.mos + EVS + Useful.load, data = subset(data, Gen=='G3'))
+summary(fitG3)
 ```
 
-The most significant factor on asking price is hours TTSN, with an average depreciation of about $`r round(fit$coefficients['TTSN'] * -1000)` per hour ($`r round(fitG3$coefficients['TTSN'] * -1000)` for G3s only; recall that G5s don't show a clear asking price depreciation). This is perhaps lower than expected (certainly lower than hourly lease cost), but some high-time airplanes already had at least partial overhaul; and it's probably sufficient to cover the overhauls and chute repack reserves. The other hourly costs are consumables and ongoing, so don't affect the buyer much.
+One of the most statistically significant factors on asking price is hours TTSN, with an average depreciation of about $`r round(fitG5$coefficients['TTSN'] * -1000)` per hour for G5 ($`r round(fitG3$coefficients['TTSN'] * -1000)` for G3s; recall that G5s don't show a strong asking price depreciation yet). This is perhaps lower than expected (certainly lower than hourly lease cost), but some high-time airplanes already had at least partial overhaul; and it's probably sufficient to cover the overhauls and chute repack reserves. The other hourly costs are consumables and ongoing, so don't affect the buyer much.
 
-The other predictive factors with statistical significance and enough samples were Gen5 (adds about $`r round(fit$coefficients['GenG5'])`K to asking price); TKS/FIKI (adding about $`r round(fit$coefficients['TKSTRUE'])`K overall, $`r round(fitG3$coefficients['TKSTRUE'])`K for G3s); and Turbo adding about $27--$40K over NA and even TN. AC only adds about $`r round(fit$coefficients['ACTRUE'])`K to the asking price.
+The addition of a Turbo engine to a G5 adds about $`r round(fitG5$coefficients['TurboT'])`K to asking price, although this likely bundles some of the GTS packaging as well, "borrowing" some of the value of features like AC and FIKI. The Turbo engine only adds about $`r round(fitG3$coefficients['TurboT'])`K to the G3s, and the Turbo-normalized (TN) in fact reduces the asking price by some $`r -round(fitG3$coefficients['TurboTN'])`K!
+
+The other predictive factors with statistical significance and enough samples were TKS/FIKI (adding about $`r round(fitG5$coefficients['TKSTRUE'])`K for G5, $`r round(fitG3$coefficients['TKSTRUE'])`K for G3s); AC only adds about $`r round(fitG5$coefficients['ACTRUE'])`K to the asking price (G5), again, probably because it's bundled with Turbo most of the times (contrast with the G3s).
 
 The age in years depreciation is treated as a linear variable (averaging about $`r round(fitG3$coefficients['Age'])`K per year for the G3s), even though it shouldn't be linear (airplanes typically lose a percentage of value every year). Treating this variable on a logarithmic axis yields a more statistically significant effect of age.
 
-Although the number of months stil available on the warranty did not turned out to be statistically significant, it's interesting to note that the model priced each remaining month at about $`r round(fit$coefficients['Warranty.mos'] * 1000)`.
+Although the number of months still available on the warranty did not turn out to be very statistically significant for G5s, it's interesting to note that the model priced each remaining month at about $`r round(fitG5$coefficients['Warranty.mos'] * 1000)`.
 
-SVT and useful load don't have a predictable effect on cost. There were only two planes with (potentially) no YD, so take this odd factor with a big grain of salt.
+ESP and useful load don't have a predictable effect on cost. In fact, EVS cost is probably included in the GTS bundle, and useful load is negatively correlated with cost, because higher useful load implies fewer options.
+
+There were only a few planes with no yaw damper, and all of them had SVT, so these factors were excluded.
 
 Here's an example prediction using this data:
 ```{r example-prediction}
-check = data.frame(Gen=as.factor("G3"), Turbo=as.factor("N"), TKS=TRUE, AC=TRUE, SVT=TRUE, ESP=TRUE, EVS=TRUE, YD=TRUE, Age=5, TTSN=600, Warranty.mos=0)
-predict(fit, newdata=check)
-# Which can also be manually extrapolated as:
-578.23 + 88.07*0 + (-17.34*5) + (-0.0754*600) + 41.29 + 17.72 + 19.72 + 12.47 + (-67.72)
+check = data.frame(Gen=as.factor("G5"), Turbo=as.factor("T"), Age=2, TTSN=700, TKS=TRUE, AC=TRUE, Warranty.mos=28, EVS=TRUE, Useful.load=1085)
+predict(fitG5, newdata=check)
 ```
+ Which can also be manually extrapolated as:
+ 
+`r fitG5$coefficients[1]` + (`r fitG5$coefficients['TurboT']` * 1) + (`r fitG5$coefficients['Age']` * 2) + (`r fitG5$coefficients['TTSN']` * 700) + (`r fitG5$coefficients['TKSTRUE']` * 1) + (`r fitG5$coefficients['ACTRUE']` * 1) + (`r fitG5$coefficients['Warranty.mos']` * 28) + (`r fitG5$coefficients['EVSTRUE']` * 1) + (`r fitG5$coefficients['Useful.load']` * 1085)
